@@ -9,9 +9,9 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Xiao Li"]
   spec.email         = ["swing1979@gmail.com"]
 
-  spec.summary       = %q{TODO: Write a short summary, because Rubygems requires one.}
-  spec.description   = %q{TODO: Write a longer description or delete this line.}
-  spec.homepage      = "TODO: Put your gem's website or public repo URL here."
+  spec.summary       = %q{User privileges and feature toggle}
+  spec.description   = %q{It's time to make it simpler}
+  spec.homepage      = "https://github.com/ThoughtWorksStudios/piece"
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   spec.bindir        = "exe"
