@@ -43,4 +43,65 @@ class PieceTest < Test::Unit::TestCase
     assert_raise(Piece::InvalidKey) { pieces.has?('super:*') }
     assert_raise(Piece::InvalidKey) { pieces.has?('admin:*:destroy') }
   end
+
+  def test_combination_by_yaml_anchors
+    pieces = Piece.load(<<-YAML)
+    role1: &role1
+      posts: [new, create, destroy]
+    role2: &role2
+      comments: destroy
+      users: '*'
+    admin:
+      <<: *role1
+      <<: *role2
+    YAML
+    assert pieces.has?('admin:comments:destroy')
+  end
+
+  def test_union_abstraction_by_root_group_name
+    pieces = Piece.load(<<-YAML)
+    role1:
+      posts: [new, create, destroy]
+    role2:
+      comments: destroy
+      users: '*'
+    admin: role1 + role2
+    YAML
+    assert pieces.has?('admin:comments:destroy')
+  end
+
+  def test_subtraction_abstraction_by_root_group_name
+    pieces = Piece.load(<<-YAML)
+    role1:
+      posts: [new, create, destroy]
+      comments: destroy
+    role2:
+      posts: [new, destroy]
+      users: '*'
+    admin: role1 - role2
+    YAML
+
+    assert pieces.has?('admin:posts:create')
+    assert pieces.has?('admin:comments:destroy')
+    assert !pieces.has?('admin:posts:destroy')
+  end
+
+  def test_combination_of_abstractions
+    pieces = Piece.load(<<-YAML)
+    role1:
+      posts: [new, create, destroy]
+      comments: destroy
+    role2:
+      posts: [new, destroy]
+      users: '*'
+    role3:
+      posts: [new]
+      users: [new]
+    admin: role1 - role2
+    super: role1 - role2 + role3
+    YAML
+
+    assert !pieces.has?('admin:posts:new')
+    assert pieces.has?('super:posts:new')
+  end
 end
