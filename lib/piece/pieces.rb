@@ -1,5 +1,8 @@
 
 module Piece
+  class InvalidKey < StandardError
+  end
+
   class Pieces
     def initialize(data)
       @data = data
@@ -15,6 +18,7 @@ module Piece
 
     private
     def parts(key)
+      raise InvalidKey, "Should not include '*' in a key" if key.include?('*')
       key.split(':')
     end
 
@@ -23,14 +27,18 @@ module Piece
 
       case data
       when Hash
-        get(data[keys.shift], keys)
+        get(data[keys.first], keys[1..-1])
       when Array
-        '*' if data.include?('*') || data.include?(keys.shift)
+        get(data.first, keys) || get(data[1..-1], keys)
       when NilClass
         nil
       else
-        get([data], keys)
+        match?(data, keys.first) ? '*' : nil
       end
+    end
+
+    def match?(a, b)
+      a == b || a.nil? || a == '*' || b == '*'
     end
   end
 end

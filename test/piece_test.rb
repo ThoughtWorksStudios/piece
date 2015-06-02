@@ -7,6 +7,7 @@ class PieceTest < Test::Unit::TestCase
       posts: [new, create, destroy]
       comments: destroy
       users: '*'
+    super: '*'
     YAML
     assert pieces.has?("admin:comments:destroy")
     assert !pieces.has?("admin:comments:create")
@@ -25,5 +26,21 @@ class PieceTest < Test::Unit::TestCase
 
     assert_equal ['*'], pieces['admin:users']
     assert_equal '*', pieces['admin:users:new']
+
+    assert_equal ['*'], pieces['super']
+    assert pieces.has?('super:users')
+    assert pieces.has?('super')
+  end
+
+  def test_does_not_support_wildcard_char_in_key
+    pieces = Piece.load(<<-YAML)
+    admin:
+      posts: [new, create, destroy]
+      comments: destroy
+      users: '*'
+    super: '*'
+    YAML
+    assert_raise(Piece::InvalidKey) { pieces.has?('super:*') }
+    assert_raise(Piece::InvalidKey) { pieces.has?('admin:*:destroy') }
   end
 end
