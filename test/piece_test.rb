@@ -137,4 +137,28 @@ class PieceTest < Test::Unit::TestCase
     assert pieces.has?('comments:posts:new')
     assert !pieces.has?('comments:posts:create')
   end
+
+  def test_combination_of_abstraction_and_wildcard_char
+    pieces = Piece.load(<<-YAML)
+    role1:
+      posts: [new, create, destroy]
+      comments: destroy
+    role2:
+      posts: [new, destroy]
+      users: '*'
+    role3:
+      posts: [new]
+      users: [new]
+    admin: '* - role1'
+    super: '* - role2 + role3'
+    YAML
+
+    assert !pieces.has?('admin:posts:new')
+    assert pieces.has?('admin:users:new')
+
+    assert pieces.has?('super:posts:new')
+    assert pieces.has?('super:users:new')
+    assert !pieces.has?('super:posts:destroy')
+    assert !pieces.has?('super:users:create')
+  end
 end
