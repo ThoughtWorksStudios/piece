@@ -56,6 +56,7 @@ class PieceTest < Test::Unit::TestCase
       <<: *role2
     YAML
     assert pieces.has?('admin:comments:destroy')
+    assert pieces.has?('admin:users:new')
   end
 
   def test_union_abstraction_by_root_group_name
@@ -68,6 +69,7 @@ class PieceTest < Test::Unit::TestCase
     admin: role1 + role2
     YAML
     assert pieces.has?('admin:comments:destroy')
+    assert pieces.has?('admin:users:new')
   end
 
   def test_subtraction_abstraction_by_root_group_name
@@ -84,6 +86,7 @@ class PieceTest < Test::Unit::TestCase
     assert pieces.has?('admin:posts:create')
     assert pieces.has?('admin:comments:destroy')
     assert !pieces.has?('admin:posts:destroy')
+    assert !pieces.has?('admin:users:new')
   end
 
   def test_combination_of_abstractions
@@ -103,6 +106,8 @@ class PieceTest < Test::Unit::TestCase
 
     assert !pieces.has?('admin:posts:new')
     assert pieces.has?('super:posts:new')
+    assert !pieces.has?('admin:users:new')
+    assert pieces.has?('super:users:new')
   end
 
   def test_alias
