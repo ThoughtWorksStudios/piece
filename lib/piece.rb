@@ -1,11 +1,11 @@
 require 'yaml'
 
 require "piece/version"
-require 'piece/pieces'
+require 'piece/rules'
 
 module Piece
   module_function
-  def load(pieces)
-    Pieces.new(YAML.load(pieces))
+  def load(rules)
+    Rules.new(YAML.load(rules))
   end
 end
