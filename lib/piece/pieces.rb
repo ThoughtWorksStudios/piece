@@ -35,13 +35,13 @@ module Piece
           raise "Unknown operator: #{group.op}"
         end
       when ExpressionParser::Id
-        apply(group.val, keys)
-      else
-        if @data.has_key?(group)
-          get(@data[group], keys)
+        if @data.has_key?(group.val)
+          get(@data[group.val], keys)
         else
-          raise "Unknown group: #{group}"
+          get(group, keys)
         end
+      else
+        raise "Unknown type: #{group.inspect}"
       end
     end
 
@@ -54,12 +54,12 @@ module Piece
         get(data.first, keys) || get(data[1..-1], keys)
       when NilClass
         nil
-      when ExpressionParser::Exp
-        apply(data, keys)
       when ExpressionParser::Id
         match?(data.val, keys.first) ? '*' : nil
+      when String
+        apply(ExpressionParser.new.parse(data), keys)
       else
-        get(ExpressionParser.new.parse(data), keys)
+        raise "Unknown type: #{group.inspect}"
       end
     end
 

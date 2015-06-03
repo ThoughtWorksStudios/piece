@@ -104,4 +104,32 @@ class PieceTest < Test::Unit::TestCase
     assert !pieces.has?('admin:posts:new')
     assert pieces.has?('super:posts:new')
   end
+
+  def test_alias
+    pieces = Piece.load(<<-YAML)
+    role1:
+      posts: [new, create, destroy]
+      comments: destroy
+    role2: role1
+    YAML
+
+    assert pieces.has?('role1:posts:new')
+    assert pieces.has?('role2:posts:new')
+  end
+
+  def test_confusing_duplicated_group_names
+    pieces = Piece.load(<<-YAML)
+    role1:
+      posts: [new, create, destroy]
+      comments: destroy
+    posts: role1
+    comments:
+      posts: [new]
+    YAML
+
+    assert pieces.has?('role1:posts:new')
+    assert pieces.has?('posts:posts:new')
+    assert pieces.has?('comments:posts:new')
+    assert !pieces.has?('comments:posts:create')
+  end
 end
