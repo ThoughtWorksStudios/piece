@@ -29,7 +29,7 @@ module Piece
 
     private
     def action_parts(action)
-      action.map{|part| part.split(':')}.flatten.map(&:strip).tap do |ret|
+      action.map{|part| part.to_s.split(':')}.flatten.map(&:strip).tap do |ret|
         if ret.any?{|part| part.include?('*')}
           raise InvalidAction, "Should not include '*' in an action"
         end
@@ -37,7 +37,7 @@ module Piece
     end
 
     def rule_parts(rule)
-      rule.split(':').map(&:strip)
+      Array(rule).map{|part| part.to_s.split(':')}.flatten.map(&:strip)
     end
 
     def dequote(str)

@@ -249,7 +249,18 @@ class PieceTest < Test::Unit::TestCase
     rules = Piece.rules
     rules << 'admin:posts:*'
     assert rules.match?('admin', 'posts', 'new')
+    assert rules.match?(:admin, :posts, :new)
     assert rules.match?('admin', 'posts:new')
     assert_equal '*', rules['admin', 'posts:new']
+  end
+
+  def test_append_array_rule
+    rules = Piece.rules
+    rules << ['admin', 'posts', "*"]
+    rules << [:admin, :users, :'*']
+    rules << ["admin:comments:[*]"]
+    assert rules.match?('admin:posts:new')
+    assert rules.match?('admin:users:new')
+    assert rules.match?('admin:comments:new')
   end
 end
