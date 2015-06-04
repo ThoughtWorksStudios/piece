@@ -5,22 +5,36 @@ module Piece
   end
 
   class Rules
-    def initialize(data)
+    def initialize(data={})
       @data = data
     end
 
+    def <<(rule)
+      parts = rule_parts(rule)
+      group = parts[0..-3].inject(@data) do |data, part|
+        data[part] ||= {}
+      end
+      last = parts.last
+      group[parts[-2]] = (last =~ /^\[([^\]]*)\]$/ ? $1 : last).split(',').map(&:strip)
+    end
+    alias :add :<<
+
     def match?(action)
-      !!get(@data, parts(action))
+      !!get(@data, action_parts(action))
     end
 
     def [](action)
-      get(@data, parts(action))
+      get(@data, action_parts(action))
     end
 
     private
-    def parts(action)
+    def action_parts(action)
       raise InvalidAction, "Should not include '*' in a rule" if action.include?('*')
-      action.split(':')
+      action.split(':').map(&:strip)
+    end
+
+    def rule_parts(rule)
+      rule.split(':').map(&:strip)
     end
 
     def apply(group, actions)

@@ -214,4 +214,24 @@ class PieceTest < Test::Unit::TestCase
     assert !rules.match?('super:posts:destroy')
     assert !rules.match?('super:users:create')
   end
+
+  def test_append_rules
+    rules = Piece.rules
+    rules << 'admin:posts:new,create,destroy'
+    rules << 'admin: comments: [new,destroy]'
+    rules << 'admin:users:*'
+    rules << 'super:users:*'
+    rules << 'hero: admin - super'
+    rules << 'hello:*'
+    assert rules.match?('admin:users:new')
+    assert rules.match?('admin:posts:new')
+    assert rules.match?('admin:comments:new')
+    assert !rules.match?('admin:posts:update')
+    assert rules.match?('super:users:new')
+
+    assert rules.match?('hero:posts:new')
+    assert !rules.match?('hero:users:new')
+
+    assert rules.match?('hello:world')
+  end
 end

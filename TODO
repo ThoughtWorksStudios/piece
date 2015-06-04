@@ -1,5 +1,3 @@
-* load rules by string format: group:group:*, group:group:action
-* append rules
 * serialize to yaml
 * save to DB
 * delete piece by key: group:group:*

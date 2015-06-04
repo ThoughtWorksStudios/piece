@@ -8,4 +8,8 @@ module Piece
   def load(rules)
     Rules.new(YAML.load(rules))
   end
+
+  def rules
+    Rules.new
+  end
 end
