@@ -15,26 +15,33 @@ module Piece
         data[part] ||= {}
       end
       last = parts.last
-      group[parts[-2]] = (last =~ /^\[([^\]]*)\]$/ ? $1 : last).split(',').map(&:strip)
+      group[parts[-2]] = dequote(last).split(',').map(&:strip)
     end
     alias :add :<<
 
-    def match?(action)
-      !!get(@data, action_parts(action))
+    def match?(*action)
+      !!self[*action]
     end
 
-    def [](action)
+    def [](*action)
       get(@data, action_parts(action))
     end
 
     private
     def action_parts(action)
-      raise InvalidAction, "Should not include '*' in a rule" if action.include?('*')
-      action.split(':').map(&:strip)
+      action.map{|part| part.split(':')}.flatten.map(&:strip).tap do |ret|
+        if ret.any?{|part| part.include?('*')}
+          raise InvalidAction, "Should not include '*' in an action"
+        end
+      end
     end
 
     def rule_parts(rule)
       rule.split(':').map(&:strip)
+    end
+
+    def dequote(str)
+      str =~ /^[\['"](.*)[\]'"]$/ ? $1 : str
     end
 
     def apply(group, actions)
