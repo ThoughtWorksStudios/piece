@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ["swing1979@gmail.com"]
 
   spec.summary       = %q{User privileges and feature toggle}
-  spec.description   = %q{It's time to make user privileges and feature toggle simpler}
+  spec.description   = %q{A model based on Rails controller actions to make user privileges and feature toggle simpler}
   spec.homepage      = "https://github.com/ThoughtWorksStudios/piece"
 
   spec.files         = `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
