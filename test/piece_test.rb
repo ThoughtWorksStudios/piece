@@ -222,7 +222,7 @@ class PieceTest < Test::Unit::TestCase
     rules << 'admin:users:*'
     rules << 'super:users:*'
     rules << 'hero: admin - super'
-    rules << 'hello:*'
+    rules.add 'hello:*'
     assert rules.match?('admin:users:new')
     assert rules.match?('admin:posts:new')
     assert rules.match?('admin:comments:new')
@@ -259,8 +259,27 @@ class PieceTest < Test::Unit::TestCase
     rules << ['admin', 'posts', "*"]
     rules << [:admin, :users, :'*']
     rules << ["admin:comments:[*]"]
+    rules << ['admin', 'blog', ['new', 'create']]
     assert rules.match?('admin:posts:new')
     assert rules.match?('admin:users:new')
     assert rules.match?('admin:comments:new')
+    assert rules.match?('admin:blog:new')
+  end
+
+  def test_delete_rule
+    rules = Piece.rules
+    rules << ['admin', 'posts', "*"]
+    rules << ['admin', 'comments', ['new', 'create']]
+    rules.delete('admin', 'posts', "*")
+    rules.delete('admin', 'comments', "new")
+    assert !rules.match?('admin:posts:new')
+    assert !rules.match?('admin:posts:create')
+
+    assert !rules.match?('admin:comments:new')
+    assert rules.match?('admin:comments:create')
+    rules.delete('admin', 'comments', "create")
+
+    assert !rules.match?('admin:comments:create')
+    assert !rules.match?('admin:comments')
   end
 end

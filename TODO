@@ -1,5 +1,4 @@
 * serialize to yaml
 * save to DB
-* delete piece by key: group:group:*
-* print reason: why has? respond true / false
-* print all matching rules given a key
+* print reason: why match? respond true / false
+* print all matching rules given an action

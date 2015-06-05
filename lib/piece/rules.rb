@@ -19,6 +19,24 @@ module Piece
     end
     alias :add :<<
 
+    def delete(*rule)
+      return if rule.empty?
+      parts = rule_parts(rule)
+
+      group = parts[0..-2].inject(@data) do |data, part|
+        data[part].tap do |ret|
+          return if ret.nil?
+        end
+      end
+
+      if group
+        group.delete_if {|rule| rule == parts[-1]}
+        if group.empty?
+          self.delete(*(parts[0..-2]))
+        end
+      end
+    end
+
     def match?(*action)
       !!self[*action]
     end
@@ -37,7 +55,16 @@ module Piece
     end
 
     def rule_parts(rule)
-      Array(rule).map{|part| part.to_s.split(':')}.flatten.map(&:strip)
+      Array(rule).map do |part|
+        case part
+        when Array
+          part.join(',')
+        when Symbol
+          part.to_s
+        else
+          part.to_s
+        end.split(':')
+      end.flatten.map(&:strip)
     end
 
     def dequote(str)
