@@ -320,14 +320,14 @@ class PieceTest < Test::Unit::TestCase
   def test_example1
     rules = Piece.load(<<-YAML)
 all: '*'
-unsafe:
+admin_only:
   admins: all
   organizations: [new, create, destroy]
   users: [new, edit, create, update, destroy]
 json: all
 html:
   admin: all
-  readonly: all - unsafe
+  readonly: all - admin_only
 YAML
     assert rules.match?('html:readonly:organizations:index')
   end
