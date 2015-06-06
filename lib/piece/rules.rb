@@ -44,11 +44,13 @@ module Piece
     end
 
     def match?(*action)
-      !!self[*action]
+      self[*action][:match]
     end
 
     def [](*action)
-      get(@data, action_parts(action))
+      ret = []
+      m = eval(@data, action_parts(action), ret)
+      {:match => m == :match, :reason => ret}
     end
 
     private
@@ -77,42 +79,64 @@ module Piece
       str =~ /^[\['"](.*)[\]'"]$/ ? $1 : str
     end
 
-    def apply(group, actions)
+    def apply(group, actions, backtrace)
       case group
       when ExpressionParser::Exp
         validate_rule_names(group)
         case group.op
         when '+'
-          apply(group.left, actions) || apply(group.right, actions)
+          sub = []
+          if r = apply(group.left, actions, sub)
+            backtrace.concat(sub)
+            r
+          else
+            apply(group.right, actions, backtrace)
+          end
         when '-'
-          apply(group.left, actions) && apply(group.right, actions).nil?
+          sub1, sub2 = [], []
+          if r = apply(group.left, actions, sub1)
+            if apply(group.right, actions, sub2).nil?
+              backtrace.concat(sub1)
+              r
+            else
+              backtrace.concat(sub2)
+              nil
+            end
+          else
+            backtrace.concat(sub1)
+            nil
+          end
         else
           raise "Unknown operator: #{group.op}"
         end
       when ExpressionParser::Id
         if @data.has_key?(group.val)
-          get(@data[group.val], actions)
+          backtrace << group.val
+          eval(@data[group.val], actions, backtrace)
         else
-          get(group, actions)
+          eval(group, actions, backtrace)
         end
       else
         raise "Unknown type: #{group.inspect}"
       end
     end
 
-    def get(data, actions)
-      return data.nil? ? nil : Array(data) if actions.empty?
+    def eval(data, actions, backtrace=[])
+      return data.nil? ? nil : :match if actions.empty?
       case data
       when Hash
-        get(data[actions.first], actions[1..-1])
+        backtrace << actions.first
+        eval(data[actions.first], actions[1..-1], backtrace)
       when Array
-        get(data.first, actions) || get(data[1..-1], actions)
+        backtrace << data
+        eval(data.first, actions) || eval(data[1..-1], actions)
       when NilClass
         nil
       when ExpressionParser::Id
-        _match_?(data.val, actions.first) ? '*' : nil
+        _match_?(data.val, actions.first) ? :match : nil
       when String
-        apply(ExpressionParser.new.parse(data), actions)
+        backtrace << data
+        apply(ExpressionParser.new.parse(data), actions, backtrace)
       else
         raise "Unknown type: #{group.inspect}"
       end

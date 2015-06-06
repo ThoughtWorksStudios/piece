@@ -1,4 +1,3 @@
 * serialize to yaml
 * save to DB
-* print reason: why match? respond true / false
 * print all matching rules given an action

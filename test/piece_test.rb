@@ -13,21 +13,21 @@ class PieceTest < Test::Unit::TestCase
     assert !rules.match?("admin:comments:create")
     assert rules.match?('admin:users:new')
 
-    assert_equal ['destroy'], rules['admin:comments']
-    assert_equal ['new', 'create', 'destroy'], rules['admin:posts']
+    assert rules['admin:comments'][:match]
+    assert rules['admin:posts'][:match]
 
-    assert_equal '*', rules['admin:comments:destroy']
-    assert_equal '*', rules['admin:comments:destroy:confirm']
-    assert_nil rules['admin:comments:new']
-    assert_nil rules['admin:comments:new:confirm']
-    assert_nil rules['admin:products']
-    assert_nil rules['admin:products:new']
-    assert_nil rules['user']
+    assert rules['admin:comments:destroy'][:match]
+    assert rules['admin:comments:destroy:confirm'][:match]
+    assert_false rules['admin:comments:new'][:match]
+    assert_false rules['admin:comments:new:confirm'][:match]
+    assert_false rules['admin:products'][:match]
+    assert_false rules['admin:products:new'][:match]
+    assert_false rules['user'][:match]
 
-    assert_equal ['*'], rules['admin:users']
-    assert_equal '*', rules['admin:users:new']
+    assert rules['admin:users'][:match]
+    assert rules['admin:users:new'][:match]
 
-    assert_equal ['*'], rules['super']
+    assert rules['super'][:match]
     assert rules.match?('super:users')
     assert rules.match?('super')
   end
@@ -258,7 +258,7 @@ class PieceTest < Test::Unit::TestCase
     assert rules.match?('admin', 'posts', 'new')
     assert rules.match?(:admin, :posts, :new)
     assert rules.match?('admin', 'posts:new')
-    assert_equal '*', rules['admin', 'posts:new']
+    assert rules['admin', 'posts:new'][:match]
   end
 
   def test_append_array_rule
@@ -288,6 +288,33 @@ class PieceTest < Test::Unit::TestCase
 
     assert !rules.match?('admin:comments:create')
     assert !rules.match?('admin:comments')
+  end
+
+  def test_show_reason
+    rules = Piece.load(<<-YAML)
+    admin:
+      posts: [new, create, destroy]
+      comments: destroy
+      users: '*'
+    super: '* - admin'
+    hero:
+      posts: [update]
+      comments: new
+    world: admin + hero
+    sword: world
+    YAML
+
+    assert_equal ['admin', 'comments', 'destroy'], rules["admin:comments:destroy"][:reason]
+    assert_equal ['admin', 'comments', 'destroy'], rules["admin:comments:create"][:reason]
+    assert_equal ['admin', 'users', '*'], rules["admin:users:new"][:reason]
+    assert_equal ['admin', 'posts', ['new', 'create', 'destroy']], rules["admin:posts:update"][:reason]
+
+    assert_equal ['super', '* - admin', 'admin', 'posts', ['new', 'create', 'destroy']], rules["super:posts:new"][:reason]
+
+    assert_equal ['world', 'admin + hero', 'hero', 'posts', ['update']], rules["world:posts:update"][:reason]
+    assert_equal ['world', 'admin + hero', 'admin', 'comments', 'destroy'], rules["world:comments:destroy"][:reason]
+
+    assert_equal ['sword', 'world', 'world', 'admin + hero', 'admin', 'comments', 'destroy'], rules["sword:comments:destroy"][:reason]
   end
 
   def test_example1
