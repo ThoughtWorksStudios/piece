@@ -1,7 +1,13 @@
 require 'piece/expression.tab'
 
 module Piece
-  class InvalidAction < StandardError
+  class RulesError < StandardError
+  end
+
+  class InvalidAction < RulesError
+  end
+
+  class UnknownRuleGroupName < RulesError
   end
 
   class Rules
@@ -74,6 +80,7 @@ module Piece
     def apply(group, actions)
       case group
       when ExpressionParser::Exp
+        validate_rule_names(group)
         case group.op
         when '+'
           apply(group.left, actions) || apply(group.right, actions)
@@ -113,6 +120,19 @@ module Piece
 
     def _match_?(a, b)
       a == b || a.nil? || a == '*' || b == '*'
+    end
+
+    def validate_rule_names(exp)
+      case exp
+      when ExpressionParser::Exp
+        validate_rule_names(exp.left)
+        validate_rule_names(exp.right)
+      when ExpressionParser::Id
+        if exp.val != '*' && !@data.has_key?(exp.val)
+          raise UnknownRuleGroupName,
+                "Expecting '#{exp.val}' in expression to be a root rule group name(root group names: #{@data.keys.inspect}) you defined. "
+        end
+      end
     end
   end
 end

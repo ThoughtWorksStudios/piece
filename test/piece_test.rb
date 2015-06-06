@@ -79,21 +79,24 @@ class PieceTest < Test::Unit::TestCase
     admin1: role1 + role2
     admin2: role1 - role2
     YAML
-    assert rules.match?('admin1:posts:destroy')
-    assert !rules.match?('admin1:users:new')
 
-    assert rules.match?('admin1:role2')
-    assert !rules.match?('admin1:role1')
-
-    assert rules.match?('admin2:posts:destroy')
-    assert !rules.match?('admin2:users:new')
-
-    assert !rules.match?('admin2:role2')
-    assert !rules.match?('admin2:role1')
+    assert_raise Piece::UnknownRuleGroupName do
+      rules.match?('admin1:posts:destroy')
+    end
+    assert_raise Piece::UnknownRuleGroupName do
+      rules.match?('admin1:users:new')
+    end
+    assert_raise Piece::UnknownRuleGroupName do
+      rules.match?('admin2:posts:destroy')
+    end
+    assert_raise Piece::UnknownRuleGroupName do
+      rules.match?('admin2:users:new')
+    end
   end
 
   def test_group_subtraction
     rules = Piece.load(<<-YAML)
+    super: '*'
     role1:
       posts: [new, create, destroy]
       comments: destroy
@@ -101,12 +104,16 @@ class PieceTest < Test::Unit::TestCase
       posts: [new, destroy]
       users: '*'
     admin: role1 - role2
+    admin2: super - role1
     YAML
 
     assert rules.match?('admin:posts:create')
     assert rules.match?('admin:comments:destroy')
     assert !rules.match?('admin:posts:destroy')
     assert !rules.match?('admin:users:new')
+
+    assert rules.match?('admin2:posts:index')
+    assert !rules.match?('admin2:posts:create')
   end
 
   def test_combination_of_group_union_and_subtraction
@@ -282,4 +289,20 @@ class PieceTest < Test::Unit::TestCase
     assert !rules.match?('admin:comments:create')
     assert !rules.match?('admin:comments')
   end
+
+  def test_example1
+    rules = Piece.load(<<-YAML)
+all: '*'
+unsafe:
+  admins: all
+  organizations: [new, create, destroy]
+  users: [new, edit, create, update, destroy]
+json: all
+html:
+  admin: all
+  readonly: all - unsafe
+YAML
+    assert rules.match?('html:readonly:organizations:index')
+  end
+
 end
