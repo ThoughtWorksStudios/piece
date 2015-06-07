@@ -1,4 +1,5 @@
 require 'piece/expression.tab'
+require 'piece/seq'
 
 module Piece
   class RulesError < StandardError
@@ -44,16 +45,18 @@ module Piece
     end
 
     def match?(*action)
-      self[*action][:match]
+      matching_seq(*action).match?
     end
 
     def [](*action)
-      ret = []
-      m = eval(@data, action_parts(action), ret)
-      {:match => m == :match, :reason => ret}
+      matching_seq(*action).to_a
     end
 
     private
+    def matching_seq(*action)
+      eval(@data, action_parts(action))
+    end
+
     def action_parts(action)
       action.flatten.map{|part| part.to_s.split(':')}.flatten.map(&:strip).tap do |ret|
         if ret.any?{|part| part.include?('*')}
@@ -79,71 +82,80 @@ module Piece
       str =~ /^[\['"](.*)[\]'"]$/ ? $1 : str
     end
 
-    def apply(group, actions, backtrace)
+    def apply(group, actions)
       case group
       when ExpressionParser::Exp
         validate_rule_names(group)
         case group.op
         when '+'
-          sub = []
-          if r = apply(group.left, actions, sub)
-            backtrace.concat(sub)
-            r
+          left = apply(group.left, actions)
+          if left.match?
+            Seq[left] + Seq.match
           else
-            apply(group.right, actions, backtrace)
+            right = apply(group.right, actions)
+            if right.match?
+              Seq[right] + Seq.match
+            else
+              Seq[left] + Seq[right] + Seq.mismatch
+            end
           end
         when '-'
-          sub1, sub2 = [], []
-          if r = apply(group.left, actions, sub1)
-            if apply(group.right, actions, sub2).nil?
-              backtrace.concat(sub1)
-              r
+          left = apply(group.left, actions)
+          if left.match?
+            right = apply(group.right, actions)
+            if right.match?
+              Seq[right] + Seq.mismatch
             else
-              backtrace.concat(sub2)
-              nil
+              Seq[left] + Seq[right] + Seq.match
             end
           else
-            backtrace.concat(sub1)
-            nil
+            Seq[left] + Seq.mismatch
           end
         else
           raise "Unknown operator: #{group.op}"
         end
       when ExpressionParser::Id
         if @data.has_key?(group.val)
-          backtrace << group.val
-          eval(@data[group.val], actions, backtrace)
+          Seq[group.val] + eval(@data[group.val], actions)
         else
-          eval(group, actions, backtrace)
+          eval(group, actions)
         end
       else
         raise "Unknown type: #{group.inspect}"
       end
     end
 
-    def eval(data, actions, backtrace=[])
-      return data.nil? ? nil : :match if actions.empty?
-      case data
-      when Hash
-        backtrace << actions.first
-        eval(data[actions.first], actions[1..-1], backtrace)
-      when Array
-        backtrace << data
-        eval(data.first, actions) || eval(data[1..-1], actions)
-      when NilClass
-        nil
-      when ExpressionParser::Id
-        _match_?(data.val, actions.first) ? :match : nil
-      when String
-        backtrace << data
-        apply(ExpressionParser.new.parse(data), actions, backtrace)
+    def eval(data, actions)
+      if actions.empty?
+        Seq.match(!data.nil?)
       else
-        raise "Unknown type: #{group.inspect}"
+        case data
+        when Hash
+          Seq[actions.first] + eval(data[actions.first], actions[1..-1])
+        when Array
+          data.each do |ac|
+            ret = eval(ac, actions)
+            if ret.match?
+              return ret
+            end
+          end
+          Seq[data] + Seq.mismatch
+        when NilClass
+          Seq.mismatch
+        when ExpressionParser::Id
+          if data.val == '*'
+            Seq.match
+          elsif actions.size == 1
+            Seq.match(data.val == actions[0])
+          else
+            Seq.mismatch
+          end
+        when String
+          Seq[data] + apply(ExpressionParser.new.parse(data), actions)
+        else
+          raise "Unknown type: #{group.inspect}"
+        end
       end
-    end
-
-    def _match_?(a, b)
-      a == b || a.nil? || a == '*' || b == '*'
     end
 
     def validate_rule_names(exp)
