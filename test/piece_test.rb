@@ -259,6 +259,7 @@ class PieceTest < Test::Unit::TestCase
     assert rules.match?(:admin, :posts, :new)
     assert rules.match?('admin', 'posts:new')
     assert rules['admin', 'posts:new'][:match]
+    assert rules[['admin', 'posts:new']][:match]
   end
 
   def test_append_array_rule
