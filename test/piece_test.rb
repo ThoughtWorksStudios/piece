@@ -289,14 +289,14 @@ class PieceTest < Test::Unit::TestCase
     rules = Piece.rules
     rules << ['admin', 'posts', "*"]
     rules << ['admin', 'comments', ['new', 'create']]
-    rules.delete('admin', 'posts', '*')
-    rules.delete('admin', 'comments', "new")
+    rules.delete(['admin', 'posts', '*'])
+    rules.delete('admin:comments:new')
     assert !rules.match?('admin:posts:new')
     assert !rules.match?('admin:posts:create')
 
     assert !rules.match?('admin:comments:new')
     assert rules.match?('admin:comments:create')
-    rules.delete('admin', 'comments', "create")
+    rules.delete(['admin', 'comments', "create"])
 
     assert !rules.match?('admin:comments:create')
     assert !rules.match?('admin:comments')

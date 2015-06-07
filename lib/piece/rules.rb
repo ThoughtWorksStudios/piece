@@ -26,7 +26,7 @@ module Piece
     end
     alias :add :<<
 
-    def delete(*rule)
+    def delete(rule)
       return if rule.empty?
       parts = rule_parts(rule)
 
@@ -39,7 +39,7 @@ module Piece
       if group
         group.delete_if {|rule| rule == parts[-1]}
         if group.empty?
-          self.delete(*(parts[0..-2]))
+          self.delete(parts[0..-2])
         end
       end
     end
