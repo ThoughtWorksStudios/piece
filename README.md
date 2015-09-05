@@ -29,7 +29,7 @@ Or install it yourself as:
 
 You can find full example with running Rails application [here](https://github.com/xli/piece-blog).
 
-1. Define rules config/privileges.yml
+Define rules config/privileges.yml
 
     writer:
       posts: '*'
@@ -39,11 +39,11 @@ You can find full example with running Rails application [here](https://github.c
       users: [login, logout, new, create]
       posts: [index, show]
 
-2. Load rules from YAML file
+Load rules from YAML file
 
-   rules = Piece.load(File.read(Rails.root.join('config', 'privileges.yml')))
+    rules = Piece.load(File.read(Rails.root.join('config', 'privileges.yml')))
 
-3. Setup Rails controller:
+Setup Rails controller:
 
     before_action :authorize
     ...
@@ -63,20 +63,30 @@ You can find full example with running Rails application [here](https://github.c
 
 ## Define rules
 
-1. Wildcard char: *, matching everything
-2. Rule is defined in YAML format
-4. A rule is defined by multi-levels group names in YAML format. For example:
+### Concepts
+
+1. Wildcard char: *, matching everything.
+2. All rules can be defined in a YAML file.
+3. A rule is defined by multi-levels group names in YAML format.
+4. Too keep example simple, we also call root group name "role name".
+5. Use `+` to combine 2 roles.
+6. Use `-` to exclude rules defined by another role.
+7. Use Array (e.g. [login, logout, new, create]) to define multiple matchings at the lowest level.
+
+### Example
+
+A rule defined by multi-levels group names in YAML format:
 
     # Anonymous is root group, users and posts are sub-groups of anonymous.
     anonymous:
       users: [login, logout, new, create]
       posts: [index, show]
 
-5. A rule can also be defined as the following format for role based access control:
+A rule can also be defined as the following format for role based access control:
 
     role_name:controller_name:action_names
 
-6. Rule can be defined as a string, the previous YAML rules can be defined as:
+For example, previous YAML format rules can be defined as:
 
     rules = Piece.rules
     rules << 'writer:posts:*'
@@ -85,7 +95,7 @@ You can find full example with running Rails application [here](https://github.c
     rules << 'anonymous:users:[login, logout, new, create]'
     rules << 'anonymous:posts:[index, show]'
 
-7. Combine multiple rules to define a new rule:
+Combine multiple rules to define a new rule:
 
     # union 2 rules
     rules << 'author:writer + anonymous'
@@ -95,7 +105,7 @@ You can find full example with running Rails application [here](https://github.c
 
 ## Rule matching and explanation
 
-2 APIs used for matching and explanation:
+APIs for matching and explanation:
 
     rules[user_access_string]        => an explanation Array with :match or :mismatch at last
     rules.match?(user_access_string) => true or false
