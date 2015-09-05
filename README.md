@@ -1,8 +1,13 @@
-# Piece [![Build Status](https://snap-ci.com/ThoughtWorksStudios/piece/branch/master/build_image)](https://snap-ci.com/ThoughtWorksStudios/piece/branch/master) [![Build Status](https://travis-ci.org/ThoughtWorksStudios/piece.svg?branch=master)](https://travis-ci.org/ThoughtWorksStudios/piece)
+# Piece [![Build Status](https://snap-ci.com/ThoughtWorksStudios/piece/branch/master/build_image)](https://snap-ci.com/ThoughtWorksStudios/piece/branch/master)
 
 [Built with :yellow_heart: and :coffee: in San Francisco](http://thoughtworks.com/mingle/team)
 
-User privileges and feature toggles
+Piece is built for managing access control (e.g. user privileges, feature toggles) of an application.
+
+## A rule engine for you
+
+1. Define access control rules
+2. Combine rules to construct new rules
 
 ## Installation
 
@@ -22,7 +27,114 @@ Or install it yourself as:
 
 ## Usage
 
-See test/piece_test.rb
+You can find full example with running Rails application [here](https://github.com/xli/piece-blog).
+
+1. Define rules config/privileges.yml
+
+    writer:
+      posts: '*'
+    admin: '*'
+    author: writer + anonymous
+    anonymous:
+      users: [login, logout, new, create]
+      posts: [index, show]
+
+2. Load rules from YAML file
+
+   rules = Piece.load(File.read(Rails.root.join('config', 'privileges.yml')))
+
+3. Setup Rails controller:
+
+    before_action :authorize
+    ...
+
+    private
+    def current_action
+      [current_user.try(:role) || 'anonymous', controller_name, action_name]
+    end
+
+    def authorize
+      seq = Rails.configuration.privileges[current_action]
+      if seq.last == :mismatch
+        flash.now[:error] = "You're not authorized to do this action."
+        render "layouts/401", status: :unauthorized
+      end
+    end
+
+## Define rules
+
+1. Wildcard char: *, matching everything
+2. Rule is defined in YAML format
+4. A rule is defined by multi-levels group names in YAML format. For example:
+
+    # Anonymous is root group, users and posts are sub-groups of anonymous.
+    anonymous:
+      users: [login, logout, new, create]
+      posts: [index, show]
+
+5. A rule can also be defined as the following format for role based access control:
+
+    role_name:controller_name:action_names
+
+6. Rule can be defined as a string, the previous YAML rules can be defined as:
+
+    rules = Piece.rules
+    rules << 'writer:posts:*'
+    rules << 'admin:*'
+    rules << 'author:writer + anonymous'
+    rules << 'anonymous:users:[login, logout, new, create]'
+    rules << 'anonymous:posts:[index, show]'
+
+7. Combine multiple rules to define a new rule:
+
+    # union 2 rules
+    rules << 'author:writer + anonymous'
+
+    # subtract rules, the following 'user' role is defined by subtracting 'admin_only' role from 'admin' role
+    rules << 'user:admin - admin_only'
+
+## Rule matching and explanation
+
+2 APIs used for matching and explanation:
+
+    rules[user_access_string]        => an explanation Array with :match or :mismatch at last
+    rules.match?(user_access_string) => true or false
+
+Example:
+
+    rules = Piece.load(<<-YAML)
+      writer:
+        posts: '*'
+      admin: '*'
+      author: writer + anonymous
+      anonymous:
+        users: [login, logout, new, create]
+        posts: [index, show]
+    YAML
+
+We defined rule 'admin: *', hence it will match anything start with 'admin:'
+
+    rules["admin:comments:destroy"]        => ['admin', 'comments', 'destroy', :match]
+    rules.match?('admin:comments:destroy') => true
+    rules["admin:anything"]                => ['admin', 'anything', :match]
+    rules.match?('admin:anything')         => true
+
+We defined rule 'writer:posts:*', hence it will match anything start with 'writer:posts:'
+
+    rules["writer:comments:destroy"]         => ['admin', :mismatch]
+    rules.match?('writer:comments:destroy')  => false
+    rules["writer:posts:new"]                => ['admin', 'posts', 'new', :match]
+    rules.match?('writer:posts:new')         => true
+
+We defined rule 'author: writer + anonymous', hence it will match anything matches writer or anonymous role.
+
+    rules["author:posts:new"]                => ['author', 'writer + anonymous', ['writer', 'posts', 'new', :match], :match]
+    rules.match?('author:posts:new')         => true
+
+We don't have role 'terminator' defined, so anything start with 'terminator:' won't match anything:
+
+    rules["terminator:posts:new"]            => ['terminator', :mismatch]
+    rules.match?('terminator:posts:new')     => false
 
 ## Development
 
