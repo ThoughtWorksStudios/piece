@@ -63,7 +63,7 @@ Setup Rails controller:
 
 ## Define rules
 
-### Concepts
+### Basic Rules
 
 1. Wildcard char: *, matching everything.
 2. All rules can be defined in a YAML file.
